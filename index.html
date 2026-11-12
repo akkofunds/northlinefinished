@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NORTHLINE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap');
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#07090d;font-family:Inter,Arial,sans-serif;color:#f3f4f6}body.lobby-mode{overflow:auto}
+canvas{display:block;width:100vw;height:100vh}
+/* ---------- in-game HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none}
+.xh{position:absolute;left:50%;top:50%;--g:4px}.xh i{position:absolute;background:#f4f4f4;box-shadow:0 0 0 1px #101214aa}.xh i:nth-child(1){width:2px;height:7px;left:-1px;top:calc(-7px - var(--g))}.xh i:nth-child(2){width:2px;height:7px;left:-1px;top:var(--g)}.xh i:nth-child(3){width:7px;height:2px;top:-1px;left:calc(-7px - var(--g))}.xh i:nth-child(4){width:7px;height:2px;top:-1px;left:var(--g)}
+#ammo{position:absolute;right:34px;bottom:27px;font:800 42px/1 Rajdhani,Inter,sans-serif;letter-spacing:.03em;text-shadow:0 2px 10px #000}.ammo-label{font-size:10px;letter-spacing:.2em;color:#9aa0a8;margin-right:8px}.ammo-main{color:#fff}#ammo small{font-size:18px;color:#92979e}
+#stats{position:absolute;left:18px;top:16px;font:600 10px/1.7 ui-monospace,monospace;color:#a9b0b8;text-shadow:0 1px 4px #000;white-space:pre;opacity:.72}
+#start{display:none;position:fixed;inset:0;place-items:center;background:#07090dcc;backdrop-filter:blur(8px);cursor:pointer;z-index:20}#start.game-start{display:grid}#start div{text-align:center;padding:38px 58px;background:#0c1016ee;border:1px solid #343b44;box-shadow:0 25px 100px #000b;clip-path:polygon(0 0,calc(100% - 26px) 0,100% 26px,100% 100%,26px 100%,0 calc(100% - 26px))}h1{margin:0 0 7px;letter-spacing:.18em;font:900 34px/1 Rajdhani,Inter,sans-serif}h1 b{color:#ff4655}#start p{margin:5px 0;color:#9098a1;font-size:11px}.go{margin-top:20px;font:800 11px Rajdhani,Inter,sans-serif;letter-spacing:.28em;color:#ff4655}
+/* ---------- lobby: tactical / angular competitive FPS ---------- */
+#lobby{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:26px;background:#080a0d;position:relative;isolation:isolate}
+#lobby:before{content:"";position:absolute;inset:0;z-index:-2;background:radial-gradient(circle at 18% 15%,#202831 0,transparent 33%),radial-gradient(circle at 88% 82%,#25191d 0,transparent 34%),linear-gradient(135deg,#090b0e 0%,#0b0e12 48%,#090a0c 100%)}
+#lobby:after{content:"";position:absolute;inset:0;z-index:-1;opacity:.32;background-image:linear-gradient(115deg,transparent 0 18%,#ffffff08 18.1% 18.2%,transparent 18.3% 70%,#ff465508 70.1% 70.2%,transparent 70.3%),linear-gradient(90deg,transparent 0 9%,#fff4 9.05%,transparent 9.1%);pointer-events:none}
+#lobby.hidden{display:none}
+.lobby-shell{width:min(1180px,95vw);min-height:min(700px,90vh);display:grid;grid-template-columns:minmax(0,1.55fr) 360px;background:#0d1014ee;border:1px solid #343a42;box-shadow:0 30px 100px #000c;position:relative;overflow:hidden;clip-path:polygon(0 0,calc(100% - 34px) 0,100% 34px,100% 100%,34px 100%,0 calc(100% - 34px))}
+.lobby-shell:before{content:"";position:absolute;right:-150px;top:-180px;width:520px;height:520px;border:1px solid #ff46551c;transform:rotate(22deg);box-shadow:0 0 0 70px #ff465503,0 0 0 140px #ff465503;pointer-events:none}
+.lobby-main{padding:34px 40px 40px;position:relative}.lobby-side{border-left:1px solid #30363d;padding:34px 30px;background:linear-gradient(180deg,#11151ae8,#090c10f2);position:relative}.lobby-side:before{content:"";position:absolute;left:-1px;top:0;width:2px;height:130px;background:#ff4655;box-shadow:0 0 22px #ff465566}
+.brand{font:800 12px/1 Rajdhani,Inter,sans-serif;letter-spacing:.34em;color:#8f969e}.brand b{color:#ff4655}.lobby-title{font:800 clamp(42px,6vw,66px)/.9 Rajdhani,Inter,sans-serif;letter-spacing:.03em;margin:17px 0 8px;text-transform:uppercase}.lobby-sub{color:#858d96;font-size:11px;letter-spacing:.03em;margin-bottom:31px}
+.name-row{display:flex;gap:8px;margin-bottom:19px}.name-row input,.room-input{background:#090c10;border:1px solid #353c44;color:#fff;padding:14px 15px;outline:none;font:600 12px Rajdhani,Inter,sans-serif;letter-spacing:.08em}.name-row input{flex:1}.name-row .btn{white-space:nowrap}.name-row input::placeholder,.room-input::placeholder{color:#656d76}.name-row input:focus,.room-input:focus{border-color:#ff4655;box-shadow:0 0 0 1px #ff465522}
+.actions{display:flex;gap:10px}.btn{border:1px solid #3a424b;background:#151a20;color:#dfe3e7;padding:13px 18px;font:800 11px Rajdhani,Inter,sans-serif;letter-spacing:.13em;cursor:pointer;transition:.15s}.btn:hover{border-color:#7f8790;background:#1a2027;transform:translateY(-1px)}.btn.primary{background:#ff4655;color:#fff;border-color:#ff4655;box-shadow:0 8px 25px #ff465522}.btn.primary:hover{background:#ff5663;border-color:#ff5663}.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.panel{margin-top:25px;border-top:1px solid #282e35;padding-top:19px}.panel h2{font:800 10px/1 Rajdhani,Inter,sans-serif;letter-spacing:.2em;color:#737c86;margin:0 0 11px}.hidden{display:none!important}.room-box{display:flex;gap:8px}.room-code{font:800 25px/1 Rajdhani,Inter,sans-serif;letter-spacing:.23em;color:#fff;background:#090c10;border:1px solid #353c44;padding:11px 15px;min-width:190px;text-align:center}.invite{display:flex;margin-top:8px}.invite input{flex:1;background:#090c10;border:1px solid #282e35;color:#717a84;padding:9px 10px;font:10px ui-monospace,monospace;min-width:0}.invite button{width:125px}.status{font:600 10px/1.4 ui-monospace,monospace;color:#7d8791;margin-top:10px}.status[data-type=ok]{color:#79e6aa}.status[data-type=error]{color:#ff6673}
+.config-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.config-row label{font:800 9px Rajdhani,Inter,sans-serif;letter-spacing:.18em;color:#717a84}.config-row select{display:block;width:100%;margin-top:6px;background:#090c10;border:1px solid #353c44;color:#fff;padding:11px;font:700 10px Rajdhani,Inter,sans-serif;letter-spacing:.08em;outline:none}.config-row select:disabled{opacity:.5}
+#player-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:13px}.player-card{min-height:73px;border:1px solid #272e36;background:linear-gradient(135deg,#0b0f13,#10151b);display:flex;align-items:center;gap:11px;padding:11px;color:#5e6872;position:relative;overflow:hidden}.player-card:after{content:"";position:absolute;right:-22px;bottom:-22px;width:70px;height:70px;border:1px solid #ffffff08;transform:rotate(45deg)}.player-card.occupied{border-color:#424a53;color:#e3e6e9}.player-card.occupied:before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:#ff4655}.player-avatar{width:38px;height:38px;display:grid;place-items:center;background:#171d24;border:1px solid #3a424b;font:800 14px Rajdhani,Inter,sans-serif;color:#fff}.player-avatar.empty{color:#4c5661}.player-meta{display:flex;flex-direction:column;min-width:0}.player-meta strong{font:800 12px Rajdhani,Inter,sans-serif;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.player-meta span{font:9px ui-monospace,monospace;color:#69747f;margin-top:4px}.player-dot{margin-left:auto;width:5px;height:5px;background:#79e6aa;box-shadow:0 0 10px #79e6aa88}
+.side-kicker{font:800 10px Rajdhani,Inter,sans-serif;letter-spacing:.22em;color:#68717b}.room-id-big{font:900 54px/.9 Rajdhani,Inter,sans-serif;letter-spacing:.12em;margin:15px 0;color:#fff}.side-note{font-size:11px;line-height:1.8;color:#727b85;margin-bottom:30px}.side-note b{color:#e2e5e8}.start-wrap{margin-top:30px}.start-wrap button{width:100%;height:54px}.count{float:right;color:#8d969f}
+#hitmarker{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font:900 25px/1 Arial;color:#fff;text-shadow:0 0 8px #000;opacity:0;z-index:8;pointer-events:none}#hitmarker.show{opacity:1}#hitmarker.head{color:#ff4655}#killfeed{position:fixed;right:24px;top:64px;z-index:6;display:flex;flex-direction:column;gap:5px;align-items:flex-end;font:800 10px Rajdhani,Inter,sans-serif;letter-spacing:.08em;color:#e9edf0;text-shadow:0 2px 8px #000}.killfeed div{background:#090c10b8;border-left:2px solid #ff4655;padding:7px 9px}#chat{position:fixed;left:20px;bottom:20px;width:360px;z-index:10;pointer-events:auto}.chat-log{max-height:175px;overflow:auto;display:flex;flex-direction:column;gap:4px;padding:0 0 8px;text-shadow:0 1px 4px #000}.chat-line{font:10px/1.45 ui-monospace,monospace;color:#adb4bb}.chat-line span{color:#ff6673;margin-right:7px}.chat-line b{font-weight:500;color:#e8eaec}.chat-input{width:100%;background:#090c10d9;border:1px solid #252c34;color:#fff;padding:10px 12px;outline:none;font:10px ui-monospace,monospace;opacity:.35;transition:.15s}.chat-input.active,.chat-input:focus{opacity:1;border-color:#4b545e}.chat-input::placeholder{color:#78828d}
+@media(max-width:800px){#lobby{padding:12px}.lobby-shell{grid-template-columns:1fr;min-height:0}.lobby-side{display:none}.lobby-main{padding:25px 22px 30px}.lobby-title{font-size:45px}.name-row,.actions{flex-direction:column}#player-grid{grid-template-columns:1fr}.room-box{flex-direction:column}.room-code{width:100%}}
+
+#match-hud{position:fixed;top:18px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;z-index:4;font:800 11px Rajdhani,Inter,sans-serif;letter-spacing:.12em;color:#dce1e5;text-shadow:0 2px 8px #000}#match-hud .box{background:#090c10cc;border:1px solid #343b44;padding:8px 12px;backdrop-filter:blur(8px)}#health-wrap{position:fixed;left:28px;bottom:28px;width:240px;z-index:4}#health{font:900 34px/1 Rajdhani,Inter,sans-serif;color:#fff}#healthbar{height:4px;background:#252b31;margin-top:6px;overflow:hidden}#healthbar i{display:block;height:100%;background:#ff4655;width:100%;transition:width .15s}#scoreboard{position:fixed;right:24px;top:20px;z-index:5;background:#090c10dd;border:1px solid #343b44;padding:9px 12px;display:flex;gap:16px;font:800 10px Rajdhani,Inter,sans-serif;letter-spacing:.12em}#death{position:fixed;inset:0;display:none;place-items:center;z-index:30;background:#50060a44;backdrop-filter:blur(3px)}#death.show{display:grid}#death div{text-align:center}.death-big{font:900 64px/1 Rajdhani,Inter,sans-serif;color:#ff4655;letter-spacing:.12em}.death-small{margin-top:10px;color:#fff;font:800 11px Rajdhani,Inter,sans-serif;letter-spacing:.25em}</style>
+</head>
+<body class="lobby-mode">
+<div id="lobby">
+  <div class="lobby-shell">
+    <main class="lobby-main">
+      <div class="brand">NORTH<b>LINE</b> // MULTIPLAYER</div>
+      <div class="lobby-title">DEPLOYMENT LOBBY</div>
+      <div class="lobby-sub">Host private TDM rooms, or jump straight into public FFA.</div>
+
+      <div class="name-row">
+        <input id="player-name" maxlength="18" placeholder="Operator name">
+        <button class="btn primary" id="create-room">HOST TDM</button><button class="btn" id="quick-play">QUICK PLAY</button>
+      </div>
+
+      <div id="join-panel" class="panel">
+        <h2>JOIN AN EXISTING ROOM</h2>
+        <div class="room-box">
+          <input id="room-input" class="room-input" maxlength="6" placeholder="ROOM ID" autocomplete="off">
+          <button class="btn" id="join-room">JOIN</button>
+        </div>
+      </div>
+
+      <div id="create-panel" class="panel hidden">
+        <h2>ROOM ID</h2>
+        <div class="room-box">
+          <div class="room-code" id="room-id">------</div>
+          <button class="btn" id="copy-invite">COPY INVITE</button>
+        </div>
+        <div class="invite"><input id="invite-link" readonly></div>
+        <div class="status" id="lobby-status">Creating room…</div>
+      </div>
+
+      <div class="panel">
+        <h2>MATCH CONFIGURATION</h2>
+        <div class="config-row"><label>HOST MODE<select id="mode-select"><option value="tdm">TEAM DEATHMATCH</option></select></label><label>MAP<select id="map-select"><option value="dustline">DUSTLINE</option><option value="yard">NORTHLINE DOCKS</option><option value="courtyard">SANDSTONE COURTYARD</option></select></label></div>
+      </div>
+
+      <div class="panel">
+        <h2>OPERATORS <span class="count" id="player-count">0/8</span></h2>
+        <div id="player-grid"></div>
+      </div>
+    </main>
+
+    <aside class="lobby-side">
+      <div class="side-kicker">NORTHLINE // ROOM</div>
+      <div class="room-id-big" id="room-id-side">P2P</div>
+      <div class="side-note">
+        Share the invite with your squad. The host controls when the match begins.
+        <br><br><b>Lobby chat</b> is available in the lower-left. Press <b>Enter</b> to type.
+      </div>
+      <div class="start-wrap">
+        <button class="btn primary" id="start-match" disabled>START MATCH</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<canvas id="c"></canvas>
+<div id="match-hud"><div class="box" id="mode-label">FFA</div><div class="box" id="map-label">NORTHLINE DOCKS</div></div>
+<div id="scoreboard"><span>K <b id="kills">0</b></span><span>D <b id="deaths">0</b></span><span>S <b id="score">0</b></span></div>
+<div id="health-wrap"><div><span id="health">100</span> HP</div><div id="healthbar"><i></i></div></div>
+<div id="death"><div><div class="death-big">ELIMINATED</div><div class="death-small" id="death-msg">RESPAWNING</div></div></div><div id="hitmarker">+</div><div id="killfeed"></div>
+<div id="hud">
+  <div class="xh" id="xh"><i></i><i></i><i></i><i></i></div>
+  <div id="ammo"><span id="mag">20</span> <small>/ <span id="res">120</span></small></div>
+  <div id="stats"></div>
+</div>
+<div id="chat"><div class="chat-log" id="chat-log"></div><input id="chat-input" class="chat-input" placeholder="ENTER TO CHAT" autocomplete="off"></div>
+<div id="start"><div><h1>NORTH<b>LINE</b></h1><p>WASD move · Mouse aim · LMB fire · R reload · Shift walk</p>
+<p>Space / <b>Scroll wheel</b> = jump (buffered) · strafe in air to gain speed · B toggles auto-hop</p><div class="go">CLICK TO DEPLOY</div></div></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
